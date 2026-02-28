@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isToday, isSameDay, differenceInDays, parseISO } from 'date-fns'
 import { ChevronLeft, ChevronRight, Plus, Check, Clock, Phone } from 'lucide-react'
 import { db } from '../db/database'
+import { useDexieQuery } from '../hooks/useDexieQuery'
 import { formatRp, formatDate, BULAN } from '../utils/format'
 import BookingForm from '../components/BookingForm'
 
@@ -30,9 +30,9 @@ export default function Calendar() {
   const [showForm, setShowForm] = useState(false)
   const [expandedBooking, setExpandedBooking] = useState(null)
 
-  const rooms = useLiveQuery(() => db.rooms.where('isActive').equals(1).sortBy('sortOrder'))
-  const bookings = useLiveQuery(() => db.bookings.toArray())
-  const guests = useLiveQuery(() => db.guests.toArray())
+  const rooms = useDexieQuery(() => db.rooms.where('isActive').equals(1).sortBy('sortOrder'), [], ['rooms'])
+  const bookings = useDexieQuery(() => db.bookings.toArray(), [], ['bookings'])
+  const guests = useDexieQuery(() => db.guests.toArray(), [], ['guests'])
 
   const roomMap = useMemo(() => {
     if (!rooms) return {}

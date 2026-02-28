@@ -1,17 +1,17 @@
 import { useState, useMemo } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
 import { differenceInDays, parseISO } from 'date-fns'
 import { Search, Check, Clock } from 'lucide-react'
 import { db } from '../db/database'
 import { formatRp, formatDate } from '../utils/format'
+import { useDexieQuery } from '../hooks/useDexieQuery'
 
 export default function Guests() {
   const [search, setSearch] = useState('')
   const [expandedGuest, setExpandedGuest] = useState(null)
 
-  const guests = useLiveQuery(() => db.guests.toArray())
-  const bookings = useLiveQuery(() => db.bookings.toArray())
-  const rooms = useLiveQuery(() => db.rooms.toArray())
+  const guests = useDexieQuery(() => db.guests.toArray(), [], ['guests'])
+  const bookings = useDexieQuery(() => db.bookings.toArray(), [], ['bookings'])
+  const rooms = useDexieQuery(() => db.rooms.toArray(), [], ['rooms'])
 
   const roomMap = useMemo(() => {
     if (!rooms) return {}

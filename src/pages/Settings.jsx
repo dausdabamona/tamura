@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
 import { Pencil, Trash2, Plus, ChevronDown, ChevronUp } from 'lucide-react'
 import { db } from '../db/database'
 import { useConfig } from '../hooks/useConfig'
+import { useDexieQuery } from '../hooks/useDexieQuery'
 import { formatRp } from '../utils/format'
 import Modal from '../components/Modal'
 
@@ -68,7 +68,7 @@ const FAQ = [
 
 export default function Settings() {
   const config = useConfig()
-  const rooms = useLiveQuery(() => db.rooms.where('isActive').equals(1).sortBy('sortOrder'))
+  const rooms = useDexieQuery(() => db.rooms.where('isActive').equals(1).sortBy('sortOrder'), [], ['rooms'])
 
   const [editInfo, setEditInfo] = useState(false)
   const [ownerName, setOwnerName] = useState('')

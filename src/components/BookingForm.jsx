@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
 import { differenceInDays, parseISO } from 'date-fns'
 import { db } from '../db/database'
 import { formatRp } from '../utils/format'
+import { useDexieQuery } from '../hooks/useDexieQuery'
 import Modal from './Modal'
 
 const inputStyle = {
@@ -35,8 +35,8 @@ export default function BookingForm({ open, onClose, defaultDate }) {
   const [saving, setSaving] = useState(false)
   const [conflict, setConflict] = useState(null)
 
-  const rooms = useLiveQuery(() => db.rooms.where('isActive').equals(1).sortBy('sortOrder'))
-  const bookings = useLiveQuery(() => db.bookings.toArray())
+  const rooms = useDexieQuery(() => db.rooms.where('isActive').equals(1).sortBy('sortOrder'), [], ['rooms'])
+  const bookings = useDexieQuery(() => db.bookings.toArray(), [], ['bookings'])
 
   const nights = useMemo(() => {
     if (!checkIn || !checkOut) return 0

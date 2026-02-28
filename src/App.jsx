@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
+import { useState, useEffect } from 'react'
 import { db } from './db/database'
 import Header from './components/Header'
 import BottomNav from './components/BottomNav'
@@ -11,11 +10,43 @@ import Settings from './pages/Settings'
 
 export default function App() {
   const [activePage, setActivePage] = useState('calendar')
+  const [loading, setLoading] = useState(true)
+  const [config, setConfig] = useState(null)
 
-  const config = useLiveQuery(() => db.config.toCollection().first())
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadConfig() {
+      try {
+        const c = await db.config.toCollection().first()
+        if (!cancelled) {
+          setConfig(c || null)
+          setLoading(false)
+        }
+      } catch (e) {
+        console.error('Error loading config:', e)
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    loadConfig()
+
+    // Listen for changes to config table
+    function handleChanges() {
+      loadConfig()
+    }
+    db.config.hook('creating', handleChanges)
+    db.config.hook('updating', handleChanges)
+
+    return () => {
+      cancelled = true
+      db.config.hook('creating').unsubscribe(handleChanges)
+      db.config.hook('updating').unsubscribe(handleChanges)
+    }
+  }, [])
 
   // Still loading
-  if (config === undefined) {
+  if (loading) {
     return (
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',

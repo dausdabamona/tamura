@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { ArrowUpRight, ArrowDownRight, Plus } from 'lucide-react'
 import { db } from '../db/database'
 import { formatRp, formatDate, BULAN } from '../utils/format'
+import { useDexieQuery } from '../hooks/useDexieQuery'
 import TransactionForm from '../components/TransactionForm'
 
 export default function Finance() {
@@ -13,9 +13,10 @@ export default function Finance() {
   const monthStart = format(startOfMonth(now), 'yyyy-MM-dd')
   const monthEnd = format(endOfMonth(now), 'yyyy-MM-dd')
 
-  const transactions = useLiveQuery(
+  const transactions = useDexieQuery(
     () => db.transactions.toArray(),
-    []
+    [],
+    ['transactions']
   )
 
   const monthlyTransactions = useMemo(() => {
