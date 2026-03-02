@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense, memo } from 'react'
 import { db } from './db/database'
 import Header from './components/Header'
 import BottomNav from './components/BottomNav'
+import EnvBanner from './components/EnvBanner'
 
 const Onboarding = lazy(() => import('./pages/Onboarding'))
 const Calendar = lazy(() => import('./pages/Calendar'))
@@ -81,6 +82,7 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <EnvBanner />
       <Header homestayName={config.homestayName} />
       <div style={{ flex: 1 }}>
         <PageContent activePage={activePage} />

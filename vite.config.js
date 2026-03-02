@@ -6,6 +6,9 @@ const base = process.env.GITHUB_PAGES === 'true' ? '/tamura/' : '/'
 
 export default defineConfig({
   base,
+  define: {
+    'import.meta.env.VITE_VERCEL_ENV': JSON.stringify(process.env.VERCEL_ENV || ''),
+  },
   plugins: [
     react(),
     VitePWA({
