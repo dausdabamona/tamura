@@ -1,0 +1,232 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      site_url:
+        description: 'URL situs yang sudah di-deploy (GitHub Pages)'
+        required: true
+        default: 'https://dausdabamona.github.io/tamura/'
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Create Android project
+        env:
+          SITE_URL: ${{ github.event.inputs.site_url }}
+        run: |
+          mkdir -p android-app/app/src/main/java/com/tamura/app
+          mkdir -p android-app/app/src/main/res/values
+          mkdir -p android-app/app/src/main/res/mipmap-xxxhdpi
+          mkdir -p android-app/gradle/wrapper
+
+          # Copy icon
+          cp public/icon-512.png android-app/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+
+          # --- settings.gradle ---
+          echo "include ':app'" > android-app/settings.gradle
+
+          # --- gradle.properties ---
+          cat > android-app/gradle.properties << 'EOF'
+          android.useAndroidX=true
+          org.gradle.jvmargs=-Xmx2048m
+          EOF
+
+          # --- build.gradle (project) ---
+          cat > android-app/build.gradle << 'EOF'
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:8.2.2'
+              }
+          }
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          EOF
+
+          # --- build.gradle (app) ---
+          cat > android-app/app/build.gradle << 'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+          android {
+              namespace 'com.tamura.app'
+              compileSdk 34
+              defaultConfig {
+                  applicationId "com.tamura.app"
+                  minSdk 24
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0.0"
+              }
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                  }
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+          }
+          dependencies {
+              implementation 'androidx.appcompat:appcompat:1.6.1'
+          }
+          EOF
+
+          # --- res/values/strings.xml ---
+          cat > android-app/app/src/main/res/values/strings.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="app_name">TamuRA</string>
+          </resources>
+          EOF
+
+          # --- res/values/colors.xml ---
+          cat > android-app/app/src/main/res/values/colors.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="colorPrimary">#0f766e</color>
+              <color name="backgroundColor">#f0f4f3</color>
+          </resources>
+          EOF
+
+          # --- res/values/styles.xml ---
+          cat > android-app/app/src/main/res/values/styles.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
+                  <item name="android:windowBackground">@color/backgroundColor</item>
+                  <item name="android:statusBarColor">@color/colorPrimary</item>
+                  <item name="android:navigationBarColor">@color/colorPrimary</item>
+              </style>
+          </resources>
+          EOF
+
+          # --- AndroidManifest.xml ---
+          cat > android-app/app/src/main/AndroidManifest.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <application
+                  android:allowBackup="true"
+                  android:icon="@mipmap/ic_launcher"
+                  android:label="@string/app_name"
+                  android:theme="@style/AppTheme"
+                  android:usesCleartextTraffic="true">
+                  <activity
+                      android:name=".LauncherActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          # --- LauncherActivity.java ---
+          cat > android-app/app/src/main/java/com/tamura/app/LauncherActivity.java << JEOF
+          package com.tamura.app;
+
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          import android.webkit.WebSettings;
+          import android.webkit.WebChromeClient;
+          import android.view.View;
+
+          public class LauncherActivity extends Activity {
+              private WebView webView;
+
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  webView = new WebView(this);
+                  setContentView(webView);
+
+                  WebSettings s = webView.getSettings();
+                  s.setJavaScriptEnabled(true);
+                  s.setDomStorageEnabled(true);
+                  s.setDatabaseEnabled(true);
+                  s.setCacheMode(WebSettings.LOAD_DEFAULT);
+
+                  webView.setWebViewClient(new WebViewClient());
+                  webView.setWebChromeClient(new WebChromeClient());
+
+                  webView.loadUrl("${SITE_URL}");
+              }
+
+              @Override
+              public void onBackPressed() {
+                  if (webView.canGoBack()) {
+                      webView.goBack();
+                  } else {
+                      super.onBackPressed();
+                  }
+              }
+          }
+          JEOF
+
+      - name: Build APK with Gradle
+        working-directory: android-app
+        run: |
+          gradle wrapper --gradle-version 8.5
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      - name: Sign APK
+        run: |
+          # Create signing key
+          keytool -genkeypair -v \
+            -keystore tamura.keystore \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -alias tamura \
+            -storepass tamura123 -keypass tamura123 \
+            -dname "CN=TamuRA,O=TamuRA,C=ID"
+
+          # Find and sign APK
+          APK=$(find android-app -name "*.apk" -path "*/release/*" | head -1)
+          echo "Found APK: $APK"
+
+          BUILD_TOOLS=$(ls -d $ANDROID_HOME/build-tools/*/ | sort -V | tail -1)
+          echo "Build tools: $BUILD_TOOLS"
+
+          ${BUILD_TOOLS}zipalign -v -p 4 "$APK" tamura-aligned.apk
+          ${BUILD_TOOLS}apksigner sign \
+            --ks tamura.keystore \
+            --ks-pass pass:tamura123 \
+            --ks-key-alias tamura \
+            --key-pass pass:tamura123 \
+            --out TamuRA-v1.0.0.apk \
+            tamura-aligned.apk
+
+          ls -lh TamuRA-v1.0.0.apk
+          echo "APK berhasil dibuat!"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TamuRA-APK
+          path: TamuRA-v1.0.0.apk
