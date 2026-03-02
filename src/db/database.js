@@ -10,3 +10,13 @@ db.version(1).stores({
   transactions: '++id, date, type, amount, category, description, bookingId, createdAt',
   syncQueue: '++id, table, recordId, action, data, createdAt, synced'
 })
+
+// Version 2: Add WhatsApp, lat, lng to config
+db.version(2).stores({
+  config: '++id, ownerName, homestayName, island, whatsapp, lat, lng, createdAt',
+  rooms: '++id, name, capacity, pricePerNight, color, sortOrder, isActive',
+  bookings: '++id, guestId, roomId, checkIn, checkOut, status, totalAmount, notes, createdAt, updatedAt',
+  guests: '++id, name, country, phone, email, notes, createdAt',
+  transactions: '++id, date, type, amount, category, description, bookingId, createdAt',
+  syncQueue: '++id, table, recordId, action, data, createdAt, synced'
+})

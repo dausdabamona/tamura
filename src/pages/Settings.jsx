@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Pencil, Trash2, Plus, ChevronDown, ChevronUp, Download, Upload } from 'lucide-react'
+import { Pencil, Trash2, Plus, ChevronDown, ChevronUp, Download, Upload, MapPin, Share2, MessageCircle, Copy, ExternalLink } from 'lucide-react'
 import { db } from '../db/database'
 import { useConfig } from '../hooks/useConfig'
 import { useDexieQuery } from '../hooks/useDexieQuery'
 import { formatRp } from '../utils/format'
 import Modal from '../components/Modal'
+import MapPicker from '../components/MapPicker'
 
 const ROOM_COLORS = ['#0f766e', '#0369a1', '#7c3aed', '#c2410c', '#b91c1c', '#4338ca', '#0e7490', '#15803d']
 
@@ -71,6 +72,8 @@ export default function Settings() {
   const [ownerName, setOwnerName] = useState('')
   const [homestayName, setHomestayName] = useState('')
   const [island, setIsland] = useState('')
+  const [whatsapp, setWhatsapp] = useState('')
+  const [shareStatus, setShareStatus] = useState('')
 
   const [editRoomId, setEditRoomId] = useState(null)
   const [editRoomName, setEditRoomName] = useState('')
@@ -89,6 +92,7 @@ export default function Settings() {
     setOwnerName(config?.ownerName || '')
     setHomestayName(config?.homestayName || '')
     setIsland(config?.island || '')
+    setWhatsapp(config?.whatsapp || '')
     setEditInfo(true)
   }
 
@@ -98,8 +102,63 @@ export default function Settings() {
       ownerName: ownerName.trim(),
       homestayName: homestayName.trim(),
       island: island.trim(),
+      whatsapp: whatsapp.trim(),
     })
     setEditInfo(false)
+  }
+
+  async function saveLocation(newLat, newLng) {
+    if (!config) return
+    await db.config.update(config.id, { lat: newLat, lng: newLng })
+  }
+
+  function generateShareLink() {
+    if (!config || !rooms) return null
+    const data = {
+      homestayName: config.homestayName,
+      ownerName: config.ownerName,
+      island: config.island,
+      whatsapp: config.whatsapp || '',
+      lat: config.lat || null,
+      lng: config.lng || null,
+      rooms: rooms.map(r => ({
+        name: r.name,
+        capacity: r.capacity || 2,
+        pricePerNight: r.pricePerNight,
+        color: r.color,
+      })),
+    }
+    const encoded = btoa(JSON.stringify(data))
+    const base = window.location.origin + window.location.pathname
+    return `${base}#/book?data=${encoded}`
+  }
+
+  async function copyShareLink() {
+    const link = generateShareLink()
+    if (!link) return
+    try {
+      await navigator.clipboard.writeText(link)
+      setShareStatus('Link disalin!')
+      setTimeout(() => setShareStatus(''), 3000)
+    } catch {
+      // Fallback for older browsers
+      const input = document.createElement('textarea')
+      input.value = link
+      document.body.appendChild(input)
+      input.select()
+      document.execCommand('copy')
+      document.body.removeChild(input)
+      setShareStatus('Link disalin!')
+      setTimeout(() => setShareStatus(''), 3000)
+    }
+  }
+
+  function shareViaWhatsApp() {
+    const link = generateShareLink()
+    if (!link) return
+    const msg = `Lihat dan pesan kamar di ${config?.homestayName}:\n${link}`
+    const url = `https://wa.me/?text=${encodeURIComponent(msg)}`
+    window.open(url, '_blank')
   }
 
   function startEditRoom(room) {
@@ -252,6 +311,11 @@ export default function Settings() {
               <label style={labelStyle}>Lokasi</label>
               <input style={inputStyle} value={island} onChange={e => setIsland(e.target.value)} />
             </div>
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>Nomor WhatsApp</label>
+              <input style={inputStyle} type="tel" placeholder="contoh: 08123456789" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} />
+              <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Untuk tamu yang ingin pesan kamar</div>
+            </div>
             <div style={{ display: 'flex', gap: 10 }}>
               <button
                 style={{
@@ -278,6 +342,7 @@ export default function Settings() {
             <InfoRow label="Pemilik" value={config?.ownerName || '-'} />
             <InfoRow label="Penginapan" value={config?.homestayName || '-'} />
             <InfoRow label="Lokasi" value={config?.island || '-'} />
+            <InfoRow label="WhatsApp" value={config?.whatsapp || '-'} />
           </>
         )}
       </div>
@@ -386,7 +451,88 @@ export default function Settings() {
         })}
       </div>
 
-      {/* Section 3: Backup */}
+      {/* Section 3: Lokasi di Peta */}
+      <div style={sectionStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+          <MapPin size={22} color="#0f766e" />
+          <div style={sectionTitle}>Lokasi di Peta</div>
+        </div>
+        <p style={{ fontSize: 15, color: '#6b7280', marginBottom: 14, lineHeight: 1.6 }}>
+          Tap peta untuk pilih lokasi penginapan. Tamu bisa lihat lokasi di Google Maps.
+        </p>
+        <MapPicker
+          lat={config?.lat}
+          lng={config?.lng}
+          onLocationChange={(newLat, newLng) => saveLocation(newLat, newLng)}
+        />
+        {config?.lat && config?.lng && (
+          <a
+            href={`https://www.google.com/maps?q=${config.lat},${config.lng}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              marginTop: 12, padding: 14, borderRadius: 12,
+              backgroundColor: '#ecfdf5', fontSize: 15, fontWeight: 700, color: '#0f766e',
+              textDecoration: 'none', minHeight: 48,
+            }}
+          >
+            <ExternalLink size={18} /> Lihat di Google Maps
+          </a>
+        )}
+      </div>
+
+      {/* Section 4: Share Booking Link */}
+      <div style={sectionStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+          <Share2 size={22} color="#0f766e" />
+          <div style={sectionTitle}>Link Booking Online</div>
+        </div>
+        <p style={{ fontSize: 15, color: '#6b7280', marginBottom: 16, lineHeight: 1.6 }}>
+          Bagikan link ini agar tamu bisa lihat kamar dan langsung pesan via WhatsApp.
+          Bisa dipasang di Google Business, media sosial, atau dikirim langsung.
+        </p>
+        <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+          <button
+            style={{
+              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: 14, borderRadius: 14, fontSize: 16, fontWeight: 800,
+              backgroundColor: '#0f766e', color: '#fff', minHeight: 56,
+            }}
+            onClick={copyShareLink}
+          >
+            <Copy size={20} /> Salin Link
+          </button>
+          <button
+            style={{
+              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: 14, borderRadius: 14, fontSize: 16, fontWeight: 800,
+              backgroundColor: '#25d366', color: '#fff', minHeight: 56,
+            }}
+            onClick={shareViaWhatsApp}
+          >
+            <MessageCircle size={20} /> Kirim WA
+          </button>
+        </div>
+        {shareStatus && (
+          <div style={{
+            textAlign: 'center', fontSize: 15, fontWeight: 700,
+            color: '#16a34a', padding: 8,
+          }}>
+            {shareStatus}
+          </div>
+        )}
+        {!config?.whatsapp && (
+          <div style={{
+            backgroundColor: '#fef3c7', borderRadius: 12, padding: 14,
+            fontSize: 14, color: '#92400e', marginTop: 8, lineHeight: 1.6,
+          }}>
+            Isi nomor WhatsApp di bagian Info Penginapan agar tamu bisa langsung menghubungi.
+          </div>
+        )}
+      </div>
+
+      {/* Section 5: Backup */}
       <div style={sectionStyle}>
         <div style={sectionTitle}>Cadangkan Data</div>
         <p style={{ fontSize: 15, color: '#6b7280', marginBottom: 16, lineHeight: 1.6 }}>
@@ -425,7 +571,7 @@ export default function Settings() {
         )}
       </div>
 
-      {/* Section 4: Panduan */}
+      {/* Section 6: Panduan */}
       <div style={sectionStyle}>
         <div style={sectionTitle}>Panduan Pakai</div>
         {FAQ.map((item, i) => (

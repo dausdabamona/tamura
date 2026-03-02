@@ -109,6 +109,7 @@ export default function Onboarding() {
   const [ownerName, setOwnerName] = useState('')
   const [homestayName, setHomestayName] = useState('')
   const [island, setIsland] = useState('')
+  const [whatsapp, setWhatsapp] = useState('')
   const [roomCount, setRoomCount] = useState(2)
   const [pricePerNight, setPricePerNight] = useState(450000)
   const [rooms, setRooms] = useState(generateRooms(2))
@@ -149,6 +150,7 @@ export default function Onboarding() {
         ownerName: ownerName.trim(),
         homestayName: homestayName.trim(),
         island: island.trim(),
+        whatsapp: whatsapp.trim(),
         createdAt: new Date().toISOString(),
       })
 
@@ -211,6 +213,20 @@ export default function Onboarding() {
             value={island}
             onChange={e => setIsland(e.target.value)}
           />
+        </div>
+
+        <div style={inputGroup}>
+          <label style={label}>Nomor WhatsApp</label>
+          <input
+            style={input}
+            type="tel"
+            placeholder="contoh: 08123456789"
+            value={whatsapp}
+            onChange={e => setWhatsapp(e.target.value)}
+          />
+          <div style={{ fontSize: 13, color: '#6b7280', marginTop: 6 }}>
+            Untuk tamu yang ingin pesan kamar. Bisa diisi nanti.
+          </div>
         </div>
 
         <div style={btnRow}>
@@ -331,6 +347,7 @@ export default function Onboarding() {
           <SummaryRow label="Pemilik" value={ownerName || '-'} />
           <SummaryRow label="Penginapan" value={homestayName} />
           <SummaryRow label="Lokasi" value={island || '-'} />
+          <SummaryRow label="WhatsApp" value={whatsapp || '-'} />
           <SummaryRow label="Kamar" value={`${roomCount} kamar`} />
           <SummaryRow label="Harga" value={`${formatRp(pricePerNight)} / malam`} last />
         </div>

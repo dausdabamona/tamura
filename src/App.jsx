@@ -9,6 +9,7 @@ const Calendar = lazy(() => import('./pages/Calendar'))
 const Finance = lazy(() => import('./pages/Finance'))
 const Guests = lazy(() => import('./pages/Guests'))
 const Settings = lazy(() => import('./pages/Settings'))
+const PublicBooking = lazy(() => import('./pages/PublicBooking'))
 
 function Splash() {
   return (
@@ -36,12 +37,34 @@ const PageContent = memo(function PageContent({ activePage }) {
   )
 })
 
+// Parse booking data from URL hash: #/book?data=base64encoded
+function getPublicBookingData() {
+  const hash = window.location.hash
+  if (!hash.startsWith('#/book?data=')) return null
+  try {
+    const encoded = hash.replace('#/book?data=', '')
+    const json = atob(encoded)
+    return JSON.parse(json)
+  } catch {
+    return null
+  }
+}
+
 export default function App() {
   const [activePage, setActivePage] = useState('calendar')
   const [loading, setLoading] = useState(true)
   const [config, setConfig] = useState(null)
+  const [publicData, setPublicData] = useState(null)
 
   useEffect(() => {
+    // Check if this is a public booking page
+    const bookingData = getPublicBookingData()
+    if (bookingData) {
+      setPublicData(bookingData)
+      setLoading(false)
+      return
+    }
+
     let cancelled = false
 
     async function loadConfig() {
@@ -71,6 +94,15 @@ export default function App() {
   }, [])
 
   if (loading) return <Splash />
+
+  // Public booking page for guests
+  if (publicData) {
+    return (
+      <Suspense fallback={<Splash />}>
+        <PublicBooking data={publicData} />
+      </Suspense>
+    )
+  }
 
   if (!config) {
     return (
