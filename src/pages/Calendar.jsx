@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, memo } from 'react'
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isToday, isSameDay, differenceInDays, parseISO } from 'date-fns'
 import { ChevronLeft, ChevronRight, Plus, Check, Clock, Phone } from 'lucide-react'
 import { db } from '../db/database'
@@ -23,6 +23,23 @@ function getCountryFlag(country) {
   if (c.includes('korea')) return '🇰🇷'
   return '🌍'
 }
+
+const RoomLegend = memo(function RoomLegend({ rooms }) {
+  if (!rooms || rooms.length === 0) return null
+  return (
+    <div style={{
+      display: 'flex', flexWrap: 'wrap', gap: 14, padding: '12px 20px',
+      backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb',
+    }}>
+      {rooms.map(r => (
+        <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#6b7280' }}>
+          <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: r.color }} />
+          {r.name}
+        </div>
+      ))}
+    </div>
+  )
+})
 
 export default function Calendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date())
@@ -82,36 +99,44 @@ export default function Calendar() {
   }
 
   return (
-    <div style={{ paddingBottom: 80 }}>
+    <div style={{ paddingBottom: 90 }}>
       {/* Month navigation */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 16px', backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb',
+        padding: '14px 20px', backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb',
       }}>
         <button
-          style={{ width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#374151' }}
+          style={{
+            width: 52, height: 52, borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#374151', backgroundColor: '#f3f4f6',
+          }}
           onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
         >
-          <ChevronLeft size={22} />
+          <ChevronLeft size={26} />
         </button>
-        <span style={{ fontSize: 17, fontWeight: 700 }}>
+        <span style={{ fontSize: 20, fontWeight: 800 }}>
           {BULAN[currentMonth.getMonth()]} {currentMonth.getFullYear()}
         </span>
         <button
-          style={{ width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#374151' }}
+          style={{
+            width: 52, height: 52, borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#374151', backgroundColor: '#f3f4f6',
+          }}
           onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
         >
-          <ChevronRight size={22} />
+          <ChevronRight size={26} />
         </button>
       </div>
 
       {/* Calendar grid */}
-      <div style={{ padding: '8px 8px 0', backgroundColor: '#fff' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0 }}>
+      <div style={{ padding: '10px 10px 0', backgroundColor: '#fff' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
           {HARI.map(h => (
             <div key={h} style={{
-              textAlign: 'center', fontSize: 12, fontWeight: 600,
-              color: '#9ca3af', padding: '4px 0',
+              textAlign: 'center', fontSize: 13, fontWeight: 700,
+              color: '#9ca3af', padding: '6px 0',
             }}>{h}</div>
           ))}
           {calendarDays.map((day, i) => {
@@ -124,24 +149,24 @@ export default function Calendar() {
               <button
                 key={i}
                 style={{
-                  padding: '6px 2px', minHeight: 44, display: 'flex',
+                  padding: '8px 2px', minHeight: 50, display: 'flex',
                   flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
                   backgroundColor: selected ? '#ecfdf5' : 'transparent',
                   border: today ? '2px solid #0f766e' : selected ? '2px solid #0f766e' : '2px solid transparent',
-                  borderRadius: 8,
+                  borderRadius: 10,
                   opacity: inMonth ? 1 : 0.3,
                   cursor: 'pointer',
                 }}
                 onClick={() => setSelectedDate(day)}
               >
                 <span style={{
-                  fontSize: 14, fontWeight: today || selected ? 700 : 500,
+                  fontSize: 16, fontWeight: today || selected ? 800 : 600,
                   color: today ? '#0f766e' : '#374151',
                 }}>{day.getDate()}</span>
-                <div style={{ display: 'flex', gap: 3, marginTop: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <div style={{ display: 'flex', gap: 3, marginTop: 3, flexWrap: 'wrap', justifyContent: 'center' }}>
                   {dayBookings.slice(0, 4).map((b, j) => (
                     <div key={j} style={{
-                      width: 6, height: 6, borderRadius: '50%',
+                      width: 7, height: 7, borderRadius: '50%',
                       backgroundColor: roomMap[b.roomId]?.color || '#9ca3af',
                     }} />
                   ))}
@@ -153,45 +178,33 @@ export default function Calendar() {
       </div>
 
       {/* Room legend */}
-      {rooms && rooms.length > 0 && (
-        <div style={{
-          display: 'flex', flexWrap: 'wrap', gap: 12, padding: '10px 16px',
-          backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb',
-        }}>
-          {rooms.map(r => (
-            <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#6b7280' }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: r.color }} />
-              {r.name}
-            </div>
-          ))}
-        </div>
-      )}
+      <RoomLegend rooms={rooms} />
 
       {/* Selected date detail */}
-      <div style={{ padding: 16 }}>
+      <div style={{ padding: 20 }}>
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          marginBottom: 12,
+          marginBottom: 14,
         }}>
-          <span style={{ fontSize: 17, fontWeight: 700 }}>
+          <span style={{ fontSize: 20, fontWeight: 800 }}>
             {selectedDate.getDate()} {BULAN[selectedDate.getMonth()]}
           </span>
           <button
             style={{
-              display: 'flex', alignItems: 'center', gap: 4, padding: '8px 14px',
-              fontSize: 14, fontWeight: 700, color: '#fff', backgroundColor: '#0f766e',
-              borderRadius: 10, border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6, padding: '12px 20px',
+              fontSize: 16, fontWeight: 800, color: '#fff', backgroundColor: '#0f766e',
+              borderRadius: 14, border: 'none', cursor: 'pointer', minHeight: 52,
             }}
             onClick={() => setShowForm(true)}
           >
-            <Plus size={16} /> Booking
+            <Plus size={20} /> Booking
           </button>
         </div>
 
         {selectedBookings.length === 0 ? (
           <div style={{
-            backgroundColor: '#fff', borderRadius: 12, padding: 20,
-            textAlign: 'center', color: '#9ca3af', fontSize: 14,
+            backgroundColor: '#fff', borderRadius: 16, padding: 28,
+            textAlign: 'center', color: '#9ca3af', fontSize: 16,
           }}>
             Tidak ada tamu di tanggal ini
           </div>
@@ -206,40 +219,40 @@ export default function Calendar() {
               <div
                 key={b.id}
                 style={{
-                  backgroundColor: '#fff', borderRadius: 12, padding: 14,
-                  marginBottom: 8, borderLeft: `4px solid ${room?.color || '#9ca3af'}`,
+                  backgroundColor: '#fff', borderRadius: 16, padding: 16,
+                  marginBottom: 10, borderLeft: `5px solid ${room?.color || '#9ca3af'}`,
                   cursor: 'pointer',
                 }}
                 onClick={() => setExpandedBooking(expanded ? null : b.id)}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
-                    <div style={{ fontSize: 15, fontWeight: 700 }}>{guest?.name || 'Tamu'}</div>
-                    <div style={{ fontSize: 13, color: '#6b7280' }}>
+                    <div style={{ fontSize: 17, fontWeight: 800 }}>{guest?.name || 'Tamu'}</div>
+                    <div style={{ fontSize: 15, color: '#6b7280', marginTop: 4 }}>
                       {guest?.country || '-'} · {room?.name || 'Kamar'} · {nights} malam
                     </div>
                   </div>
                   <div style={{
-                    display: 'flex', alignItems: 'center', gap: 4,
-                    padding: '4px 8px', borderRadius: 6, fontSize: 12, fontWeight: 600,
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700,
                     backgroundColor: b.status === 'confirmed' ? '#dcfce7' : '#fef9c3',
                     color: b.status === 'confirmed' ? '#16a34a' : '#ca8a04',
                   }}>
-                    {b.status === 'confirmed' ? <Check size={12} /> : <Clock size={12} />}
-                    {b.status === 'confirmed' ? 'confirmed' : 'pending'}
+                    {b.status === 'confirmed' ? <Check size={14} /> : <Clock size={14} />}
+                    {b.status === 'confirmed' ? 'OK' : 'Pending'}
                   </div>
                 </div>
 
                 {expanded && (
-                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #f3f4f6', fontSize: 13, color: '#6b7280' }}>
+                  <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid #f3f4f6', fontSize: 15, color: '#6b7280' }}>
                     {guest?.phone && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                        <Phone size={13} /> {guest.phone}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                        <Phone size={16} /> {guest.phone}
                       </div>
                     )}
                     <div>Check-in: {formatDate(b.checkIn)}</div>
                     <div>Check-out: {formatDate(b.checkOut)}</div>
-                    <div style={{ fontWeight: 700, color: '#0f766e', marginTop: 4 }}>
+                    <div style={{ fontWeight: 800, color: '#0f766e', marginTop: 8, fontSize: 17 }}>
                       Total: {formatRp(b.totalAmount)}
                     </div>
                   </div>
@@ -252,8 +265,8 @@ export default function Calendar() {
 
       {/* Upcoming */}
       {upcoming.length > 0 && (
-        <div style={{ padding: '0 16px 16px' }}>
-          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>Akan Datang</div>
+        <div style={{ padding: '0 20px 20px' }}>
+          <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 12 }}>Akan Datang</div>
           {upcoming.map(b => {
             const guest = guestMap[b.guestId]
             const room = roomMap[b.roomId]
@@ -263,18 +276,18 @@ export default function Calendar() {
             return (
               <div key={b.id} style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                backgroundColor: '#fff', borderRadius: 10, padding: '10px 14px',
-                marginBottom: 6,
+                backgroundColor: '#fff', borderRadius: 14, padding: '14px 16px',
+                marginBottom: 8,
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 18 }}>{getCountryFlag(guest?.country)}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 22 }}>{getCountryFlag(guest?.country)}</span>
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>{guest?.name || 'Tamu'}</div>
-                    <div style={{ fontSize: 12, color: '#6b7280' }}>{room?.name} · {formatDate(b.checkIn)}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700 }}>{guest?.name || 'Tamu'}</div>
+                    <div style={{ fontSize: 14, color: '#6b7280' }}>{room?.name} · {formatDate(b.checkIn)}</div>
                   </div>
                 </div>
                 <div style={{
-                  padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700,
+                  padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 800,
                   backgroundColor: isHariIni ? '#dcfce7' : '#f3f4f6',
                   color: isHariIni ? '#16a34a' : '#6b7280',
                 }}>

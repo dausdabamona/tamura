@@ -1,50 +1,35 @@
+import { memo } from 'react'
 import { useOnlineStatus } from '../hooks/useOnlineStatus'
 import { Wifi, WifiOff } from 'lucide-react'
 
-const headerStyle = {
-  backgroundColor: '#0f766e',
-  color: '#fff',
-  padding: '12px 16px',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  position: 'sticky',
-  top: 0,
-  zIndex: 100,
-}
-
-const titleStyle = {
-  fontSize: 18,
-  fontWeight: 800,
-}
-
-const subtitleStyle = {
-  fontSize: 12,
-  opacity: 0.85,
-  fontWeight: 500,
-}
-
-const statusStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 4,
-  fontSize: 11,
-  opacity: 0.9,
-}
-
-export default function Header({ homestayName }) {
+export default memo(function Header({ homestayName }) {
   const isOnline = useOnlineStatus()
 
   return (
-    <div style={headerStyle}>
+    <div style={{
+      backgroundColor: '#0f766e',
+      color: '#fff',
+      padding: '14px 20px',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      position: 'sticky',
+      top: 0,
+      zIndex: 100,
+    }}>
       <div>
-        <div style={titleStyle}>TamuRA</div>
-        {homestayName && <div style={subtitleStyle}>{homestayName}</div>}
+        <div style={{ fontSize: 20, fontWeight: 800 }}>TamuRA</div>
+        {homestayName && <div style={{ fontSize: 13, opacity: 0.85, fontWeight: 500 }}>{homestayName}</div>}
       </div>
-      <div style={statusStyle}>
-        {isOnline ? <Wifi size={14} /> : <WifiOff size={14} />}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        fontSize: 13, opacity: 0.9,
+        padding: '6px 12px', borderRadius: 20,
+        backgroundColor: 'rgba(255,255,255,0.15)',
+      }}>
+        {isOnline ? <Wifi size={16} /> : <WifiOff size={16} />}
         {isOnline ? 'Online' : 'Offline'}
       </div>
     </div>
   )
-}
+})

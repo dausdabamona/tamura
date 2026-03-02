@@ -3,13 +3,21 @@
 :root {
   --primary: #0f766e;
   --primary-light: #34d399;
+  --primary-bg: #ecfdf5;
   --danger: #dc2626;
+  --danger-bg: #fef2f2;
   --warning: #f59e0b;
-  --bg: #f8faf9;
+  --success: #16a34a;
+  --success-bg: #dcfce7;
+  --bg: #f0f4f3;
   --text: #1f2937;
   --text-light: #6b7280;
+  --text-muted: #9ca3af;
   --border: #e5e7eb;
   --white: #ffffff;
+  --radius: 14px;
+  --radius-lg: 18px;
+  --min-touch: 52px;
 }
 
 * {
@@ -20,7 +28,7 @@
 
 html, body {
   font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1.5;
   color: var(--text);
   background-color: var(--bg);
@@ -47,20 +55,39 @@ body {
 
 input, select, textarea, button {
   font-family: inherit;
-  font-size: inherit;
 }
 
 input, select, textarea {
-  font-size: 16px;
+  font-size: 17px;
+  min-height: var(--min-touch);
 }
 
 button {
   cursor: pointer;
   border: none;
   background: none;
+  min-height: var(--min-touch);
 }
 
 a {
   text-decoration: none;
   color: inherit;
+}
+
+/* Better focus for accessibility */
+input:focus, select:focus, textarea:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Prevent zoom on input focus on iOS */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 17px !important;
+  }
 }

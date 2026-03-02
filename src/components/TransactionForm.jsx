@@ -5,23 +5,24 @@ import Modal from './Modal'
 
 const inputStyle = {
   width: '100%',
-  padding: '12px 14px',
-  fontSize: 16,
+  padding: '14px 16px',
+  fontSize: 17,
   border: '2px solid #e5e7eb',
-  borderRadius: 10,
+  borderRadius: 14,
   outline: 'none',
   backgroundColor: '#fff',
+  minHeight: 52,
 }
 
 const labelStyle = {
   display: 'block',
-  fontSize: 14,
-  fontWeight: 600,
-  marginBottom: 6,
+  fontSize: 16,
+  fontWeight: 700,
+  marginBottom: 8,
   color: '#374151',
 }
 
-const groupStyle = { marginBottom: 14 }
+const groupStyle = { marginBottom: 18 }
 
 const EXPENSE_CATEGORIES = ['Supply', 'Transport', 'Perbaikan', 'Lainnya']
 const INCOME_CATEGORIES = ['Booking', 'Trip/Tour', 'Lainnya']
@@ -68,30 +69,30 @@ export default function TransactionForm({ open, onClose }) {
   return (
     <Modal open={open} onClose={() => { resetForm(); onClose() }} title="Catat Transaksi">
       {/* Toggle */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
         <button
           style={{
-            flex: 1, padding: 12, borderRadius: 10, fontSize: 15, fontWeight: 700,
+            flex: 1, padding: 16, borderRadius: 14, fontSize: 17, fontWeight: 800,
             border: `2px solid ${type === 'income' ? '#0f766e' : '#e5e7eb'}`,
             backgroundColor: type === 'income' ? '#ecfdf5' : '#fff',
             color: type === 'income' ? '#0f766e' : '#6b7280',
-            cursor: 'pointer',
+            cursor: 'pointer', minHeight: 56,
           }}
           onClick={() => { setType('income'); setCategory('') }}
         >
-          Masuk
+          Uang Masuk
         </button>
         <button
           style={{
-            flex: 1, padding: 12, borderRadius: 10, fontSize: 15, fontWeight: 700,
+            flex: 1, padding: 16, borderRadius: 14, fontSize: 17, fontWeight: 800,
             border: `2px solid ${type === 'expense' ? '#dc2626' : '#e5e7eb'}`,
             backgroundColor: type === 'expense' ? '#fef2f2' : '#fff',
             color: type === 'expense' ? '#dc2626' : '#6b7280',
-            cursor: 'pointer',
+            cursor: 'pointer', minHeight: 56,
           }}
           onClick={() => { setType('expense'); setCategory('') }}
         >
-          Keluar
+          Uang Keluar
         </button>
       </div>
 
@@ -105,7 +106,7 @@ export default function TransactionForm({ open, onClose }) {
           onChange={e => setAmount(e.target.value)}
         />
         {amount > 0 && (
-          <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
+          <div style={{ fontSize: 15, color: '#6b7280', marginTop: 6 }}>
             = {formatRp(Number(amount))}
           </div>
         )}
@@ -113,13 +114,23 @@ export default function TransactionForm({ open, onClose }) {
 
       <div style={groupStyle}>
         <label style={labelStyle}>Kategori</label>
-        <select
-          style={{ ...inputStyle, appearance: 'auto' }}
-          value={category || categories[0]}
-          onChange={e => setCategory(e.target.value)}
-        >
-          {categories.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {categories.map(c => (
+            <button
+              key={c}
+              style={{
+                padding: '10px 18px', borderRadius: 12, fontSize: 15, fontWeight: 700,
+                border: `2px solid ${(category || categories[0]) === c ? color : '#e5e7eb'}`,
+                backgroundColor: (category || categories[0]) === c ? (type === 'income' ? '#ecfdf5' : '#fef2f2') : '#fff',
+                color: (category || categories[0]) === c ? color : '#6b7280',
+                cursor: 'pointer', minHeight: 44,
+              }}
+              onClick={() => setCategory(c)}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div style={groupStyle}>
@@ -135,9 +146,9 @@ export default function TransactionForm({ open, onClose }) {
 
       <button
         style={{
-          width: '100%', padding: 14, fontSize: 16, fontWeight: 700,
+          width: '100%', padding: 16, fontSize: 18, fontWeight: 800,
           color: '#fff', backgroundColor: saving ? '#9ca3af' : color,
-          borderRadius: 12, border: 'none', minHeight: 48,
+          borderRadius: 14, border: 'none', minHeight: 56,
           cursor: saving ? 'default' : 'pointer',
         }}
         disabled={saving || !amount || !description.trim()}

@@ -41,26 +41,31 @@ export default function Finance() {
   const profit = income - expense
 
   return (
-    <div style={{ paddingBottom: 80 }}>
+    <div style={{ paddingBottom: 90 }}>
       {/* Summary cards */}
-      <div style={{ display: 'flex', gap: 8, padding: '16px 16px 0' }}>
+      <div style={{ display: 'flex', gap: 10, padding: '20px 20px 0' }}>
         <div style={{
-          flex: 1, backgroundColor: '#ecfdf5', borderRadius: 12, padding: 12,
+          flex: 1, backgroundColor: '#ecfdf5', borderRadius: 16, padding: 16,
         }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', marginBottom: 4 }}>Masuk</div>
-          <div style={{ fontSize: 15, fontWeight: 800, color: '#16a34a' }}>{formatRp(income)}</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#6b7280', marginBottom: 6 }}>Masuk</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: '#16a34a' }}>{formatRp(income)}</div>
         </div>
         <div style={{
-          flex: 1, backgroundColor: '#fef2f2', borderRadius: 12, padding: 12,
+          flex: 1, backgroundColor: '#fef2f2', borderRadius: 16, padding: 16,
         }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', marginBottom: 4 }}>Keluar</div>
-          <div style={{ fontSize: 15, fontWeight: 800, color: '#dc2626' }}>{formatRp(expense)}</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#6b7280', marginBottom: 6 }}>Keluar</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: '#dc2626' }}>{formatRp(expense)}</div>
         </div>
+      </div>
+
+      {/* Profit card */}
+      <div style={{ padding: '10px 20px 0' }}>
         <div style={{
-          flex: 1, backgroundColor: profit >= 0 ? '#ecfdf5' : '#fef2f2', borderRadius: 12, padding: 12,
+          backgroundColor: profit >= 0 ? '#ecfdf5' : '#fef2f2', borderRadius: 16, padding: 16,
+          textAlign: 'center',
         }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', marginBottom: 4 }}>Profit</div>
-          <div style={{ fontSize: 15, fontWeight: 800, color: profit >= 0 ? '#16a34a' : '#dc2626' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#6b7280', marginBottom: 6 }}>Keuntungan Bulan Ini</div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: profit >= 0 ? '#16a34a' : '#dc2626' }}>
             {formatRp(profit)}
           </div>
         </div>
@@ -69,60 +74,60 @@ export default function Finance() {
       {/* List header */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '16px 16px 8px',
+        padding: '20px 20px 12px',
       }}>
-        <span style={{ fontSize: 16, fontWeight: 700 }}>
+        <span style={{ fontSize: 20, fontWeight: 800 }}>
           Catatan {BULAN[now.getMonth()]}
         </span>
         <button
           style={{
-            display: 'flex', alignItems: 'center', gap: 4, padding: '8px 14px',
-            fontSize: 14, fontWeight: 700, color: '#fff', backgroundColor: '#0f766e',
-            borderRadius: 10, border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 6, padding: '12px 20px',
+            fontSize: 16, fontWeight: 800, color: '#fff', backgroundColor: '#0f766e',
+            borderRadius: 14, border: 'none', cursor: 'pointer', minHeight: 52,
           }}
           onClick={() => setShowForm(true)}
         >
-          <Plus size={16} /> Catat
+          <Plus size={20} /> Catat
         </button>
       </div>
 
       {/* Transaction list */}
-      <div style={{ padding: '0 16px' }}>
+      <div style={{ padding: '0 20px' }}>
         {monthlyTransactions.length === 0 ? (
           <div style={{
-            backgroundColor: '#fff', borderRadius: 12, padding: 20,
-            textAlign: 'center', color: '#9ca3af', fontSize: 14,
+            backgroundColor: '#fff', borderRadius: 16, padding: 28,
+            textAlign: 'center', color: '#9ca3af', fontSize: 16,
           }}>
             Belum ada catatan bulan ini
           </div>
         ) : (
           monthlyTransactions.map(t => (
             <div key={t.id} style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              backgroundColor: '#fff', borderRadius: 12, padding: 14,
-              marginBottom: 6,
+              display: 'flex', alignItems: 'center', gap: 14,
+              backgroundColor: '#fff', borderRadius: 16, padding: 16,
+              marginBottom: 8,
             }}>
               <div style={{
-                width: 36, height: 36, borderRadius: '50%',
+                width: 44, height: 44, borderRadius: '50%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 backgroundColor: t.type === 'income' ? '#dcfce7' : '#fef2f2',
                 flexShrink: 0,
               }}>
                 {t.type === 'income'
-                  ? <ArrowUpRight size={18} color="#16a34a" />
-                  : <ArrowDownRight size={18} color="#dc2626" />
+                  ? <ArrowUpRight size={22} color="#16a34a" />
+                  : <ArrowDownRight size={22} color="#dc2626" />
                 }
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: 16, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {t.description}
                 </div>
-                <div style={{ fontSize: 12, color: '#9ca3af' }}>
+                <div style={{ fontSize: 14, color: '#9ca3af', marginTop: 2 }}>
                   {formatDate(t.date)} · {t.category}
                 </div>
               </div>
               <div style={{
-                fontSize: 14, fontWeight: 700, flexShrink: 0,
+                fontSize: 16, fontWeight: 800, flexShrink: 0,
                 color: t.type === 'income' ? '#16a34a' : '#dc2626',
               }}>
                 {t.type === 'income' ? '+' : '-'}{formatRp(t.amount)}

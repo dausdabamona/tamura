@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pencil, Trash2, Plus, ChevronDown, ChevronUp } from 'lucide-react'
+import { Pencil, Trash2, Plus, ChevronDown, ChevronUp, Download, Upload } from 'lucide-react'
 import { db } from '../db/database'
 import { useConfig } from '../hooks/useConfig'
 import { useDexieQuery } from '../hooks/useDexieQuery'
@@ -10,32 +10,33 @@ const ROOM_COLORS = ['#0f766e', '#0369a1', '#7c3aed', '#c2410c', '#b91c1c', '#43
 
 const sectionStyle = {
   backgroundColor: '#fff',
-  borderRadius: 12,
-  padding: 16,
-  marginBottom: 12,
+  borderRadius: 18,
+  padding: 20,
+  marginBottom: 14,
 }
 
 const sectionTitle = {
-  fontSize: 16,
-  fontWeight: 700,
-  marginBottom: 12,
+  fontSize: 20,
+  fontWeight: 800,
+  marginBottom: 14,
 }
 
 const inputStyle = {
   width: '100%',
-  padding: '10px 12px',
-  fontSize: 15,
+  padding: '14px 16px',
+  fontSize: 17,
   border: '2px solid #e5e7eb',
-  borderRadius: 10,
+  borderRadius: 14,
   outline: 'none',
   backgroundColor: '#fff',
+  minHeight: 52,
 }
 
 const labelStyle = {
   display: 'block',
-  fontSize: 13,
-  fontWeight: 600,
-  marginBottom: 4,
+  fontSize: 15,
+  fontWeight: 700,
+  marginBottom: 6,
   color: '#6b7280',
 }
 
@@ -46,15 +47,11 @@ const FAQ = [
   },
   {
     q: 'Bagaimana catat pengeluaran?',
-    a: 'Buka tab Keuangan, tap + Catat, pilih Keluar, isi jumlah dan keterangan, lalu Simpan.',
+    a: 'Buka tab Uang, tap + Catat, pilih Keluar, isi jumlah dan keterangan, lalu Simpan.',
   },
   {
     q: 'Bagaimana tambah/edit kamar?',
-    a: 'Buka tab Pengaturan, di bagian Kamar, tap + Tambah untuk kamar baru, atau tap icon pensil untuk edit kamar yang sudah ada.',
-  },
-  {
-    q: 'Bagaimana ubah nama homestay?',
-    a: 'Buka tab Pengaturan, di bagian Info Penginapan, tap Edit, ubah, lalu tap Simpan.',
+    a: 'Buka tab Setelan, di bagian Kamar, tap + Tambah untuk kamar baru, atau tap icon pensil untuk edit.',
   },
   {
     q: 'Apa data saya aman?',
@@ -62,7 +59,7 @@ const FAQ = [
   },
   {
     q: 'Titik warna di kalender artinya apa?',
-    a: 'Setiap warna mewakili 1 kamar yang terisi di tanggal tersebut. Lihat legenda warna di bawah kalender.',
+    a: 'Setiap warna mewakili 1 kamar yang terisi di tanggal tersebut.',
   },
 ]
 
@@ -86,6 +83,7 @@ export default function Settings() {
   const [newRoomPrice, setNewRoomPrice] = useState(450000)
 
   const [expandedFaq, setExpandedFaq] = useState(null)
+  const [backupStatus, setBackupStatus] = useState('')
 
   function startEditInfo() {
     setOwnerName(config?.ownerName || '')
@@ -145,15 +143,94 @@ export default function Settings() {
     setShowAddRoom(false)
   }
 
+  async function exportData() {
+    try {
+      setBackupStatus('Menyiapkan...')
+      const data = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        config: await db.config.toArray(),
+        rooms: await db.rooms.toArray(),
+        bookings: await db.bookings.toArray(),
+        guests: await db.guests.toArray(),
+        transactions: await db.transactions.toArray(),
+      }
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `tamura-backup-${new Date().toISOString().split('T')[0]}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+      setBackupStatus('Backup berhasil!')
+      setTimeout(() => setBackupStatus(''), 3000)
+    } catch (e) {
+      console.error('Export error:', e)
+      setBackupStatus('Gagal export')
+    }
+  }
+
+  async function importData() {
+    try {
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = '.json'
+      input.onchange = async (e) => {
+        const file = e.target.files[0]
+        if (!file) return
+        setBackupStatus('Membaca file...')
+        const text = await file.text()
+        const data = JSON.parse(text)
+
+        if (!data.version || !data.config || !data.rooms) {
+          setBackupStatus('File tidak valid')
+          setTimeout(() => setBackupStatus(''), 3000)
+          return
+        }
+
+        const ok = confirm('Ini akan MENGGANTI semua data yang ada. Lanjutkan?')
+        if (!ok) {
+          setBackupStatus('')
+          return
+        }
+
+        setBackupStatus('Mengembalikan data...')
+
+        await db.config.clear()
+        await db.rooms.clear()
+        await db.bookings.clear()
+        await db.guests.clear()
+        await db.transactions.clear()
+
+        if (data.config?.length) await db.config.bulkAdd(data.config)
+        if (data.rooms?.length) await db.rooms.bulkAdd(data.rooms)
+        if (data.bookings?.length) await db.bookings.bulkAdd(data.bookings)
+        if (data.guests?.length) await db.guests.bulkAdd(data.guests)
+        if (data.transactions?.length) await db.transactions.bulkAdd(data.transactions)
+
+        setBackupStatus('Data berhasil dikembalikan! Refresh halaman...')
+        setTimeout(() => window.location.reload(), 1500)
+      }
+      input.click()
+    } catch (e) {
+      console.error('Import error:', e)
+      setBackupStatus('Gagal import: ' + e.message)
+      setTimeout(() => setBackupStatus(''), 4000)
+    }
+  }
+
   return (
-    <div style={{ padding: 16, paddingBottom: 100 }}>
+    <div style={{ padding: 20, paddingBottom: 110 }}>
       {/* Section 1: Info Penginapan */}
       <div style={sectionStyle}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <div style={sectionTitle}>Info Penginapan</div>
           {!editInfo && (
             <button
-              style={{ fontSize: 13, fontWeight: 700, color: '#0f766e', padding: '6px 12px', borderRadius: 8, backgroundColor: '#ecfdf5' }}
+              style={{
+                fontSize: 15, fontWeight: 800, color: '#0f766e', padding: '10px 18px',
+                borderRadius: 12, backgroundColor: '#ecfdf5', minHeight: 44,
+              }}
               onClick={startEditInfo}
             >
               Edit
@@ -163,27 +240,33 @@ export default function Settings() {
 
         {editInfo ? (
           <>
-            <div style={{ marginBottom: 10 }}>
+            <div style={{ marginBottom: 14 }}>
               <label style={labelStyle}>Nama Pemilik</label>
               <input style={inputStyle} value={ownerName} onChange={e => setOwnerName(e.target.value)} />
             </div>
-            <div style={{ marginBottom: 10 }}>
+            <div style={{ marginBottom: 14 }}>
               <label style={labelStyle}>Nama Penginapan</label>
               <input style={inputStyle} value={homestayName} onChange={e => setHomestayName(e.target.value)} />
             </div>
-            <div style={{ marginBottom: 10 }}>
+            <div style={{ marginBottom: 14 }}>
               <label style={labelStyle}>Lokasi</label>
               <input style={inputStyle} value={island} onChange={e => setIsland(e.target.value)} />
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 10 }}>
               <button
-                style={{ flex: 1, padding: 10, borderRadius: 10, fontSize: 14, fontWeight: 600, backgroundColor: '#f3f4f6', color: '#6b7280' }}
+                style={{
+                  flex: 1, padding: 14, borderRadius: 14, fontSize: 16, fontWeight: 700,
+                  backgroundColor: '#f3f4f6', color: '#6b7280', minHeight: 52,
+                }}
                 onClick={() => setEditInfo(false)}
               >
                 Batal
               </button>
               <button
-                style={{ flex: 1, padding: 10, borderRadius: 10, fontSize: 14, fontWeight: 700, backgroundColor: '#0f766e', color: '#fff' }}
+                style={{
+                  flex: 1, padding: 14, borderRadius: 14, fontSize: 16, fontWeight: 800,
+                  backgroundColor: '#0f766e', color: '#fff', minHeight: 52,
+                }}
                 onClick={saveInfo}
               >
                 Simpan
@@ -193,7 +276,7 @@ export default function Settings() {
         ) : (
           <>
             <InfoRow label="Pemilik" value={config?.ownerName || '-'} />
-            <InfoRow label="Nama Penginapan" value={config?.homestayName || '-'} />
+            <InfoRow label="Penginapan" value={config?.homestayName || '-'} />
             <InfoRow label="Lokasi" value={config?.island || '-'} />
           </>
         )}
@@ -201,19 +284,19 @@ export default function Settings() {
 
       {/* Section 2: Kamar */}
       <div style={sectionStyle}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <div style={sectionTitle}>
-            Kamar / Bungalow ({rooms?.length || 0})
+            Kamar ({rooms?.length || 0})
           </div>
           <button
             style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              fontSize: 13, fontWeight: 700, color: '#0f766e',
-              padding: '6px 12px', borderRadius: 8, backgroundColor: '#ecfdf5',
+              display: 'flex', alignItems: 'center', gap: 6,
+              fontSize: 15, fontWeight: 800, color: '#0f766e',
+              padding: '10px 18px', borderRadius: 12, backgroundColor: '#ecfdf5', minHeight: 44,
             }}
             onClick={() => setShowAddRoom(true)}
           >
-            <Plus size={14} /> Tambah
+            <Plus size={18} /> Tambah
           </button>
         </div>
 
@@ -223,14 +306,14 @@ export default function Settings() {
           if (isEditing) {
             return (
               <div key={room.id} style={{
-                borderLeft: `4px solid ${room.color}`, padding: '12px 12px',
-                marginBottom: 8, borderRadius: '0 10px 10px 0', backgroundColor: '#f9fafb',
+                borderLeft: `5px solid ${room.color}`, padding: '16px 14px',
+                marginBottom: 10, borderRadius: '0 14px 14px 0', backgroundColor: '#f9fafb',
               }}>
-                <div style={{ marginBottom: 8 }}>
+                <div style={{ marginBottom: 12 }}>
                   <label style={labelStyle}>Nama Kamar</label>
                   <input style={inputStyle} value={editRoomName} onChange={e => setEditRoomName(e.target.value)} />
                 </div>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
                   <div style={{ flex: 1 }}>
                     <label style={labelStyle}>Kapasitas</label>
                     <input style={inputStyle} type="number" value={editRoomCapacity} onChange={e => setEditRoomCapacity(Number(e.target.value))} />
@@ -240,15 +323,21 @@ export default function Settings() {
                     <input style={inputStyle} type="number" value={editRoomPrice} onChange={e => setEditRoomPrice(Number(e.target.value))} />
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 10 }}>
                   <button
-                    style={{ flex: 1, padding: 10, borderRadius: 10, fontSize: 14, fontWeight: 600, backgroundColor: '#f3f4f6', color: '#6b7280' }}
+                    style={{
+                      flex: 1, padding: 14, borderRadius: 14, fontSize: 16, fontWeight: 700,
+                      backgroundColor: '#f3f4f6', color: '#6b7280', minHeight: 52,
+                    }}
                     onClick={() => setEditRoomId(null)}
                   >
                     Batal
                   </button>
                   <button
-                    style={{ flex: 1, padding: 10, borderRadius: 10, fontSize: 14, fontWeight: 700, backgroundColor: '#0f766e', color: '#fff' }}
+                    style={{
+                      flex: 1, padding: 14, borderRadius: 14, fontSize: 16, fontWeight: 800,
+                      backgroundColor: '#0f766e', color: '#fff', minHeight: 52,
+                    }}
                     onClick={saveRoom}
                   >
                     Simpan
@@ -261,28 +350,34 @@ export default function Settings() {
           return (
             <div key={room.id} style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              borderLeft: `4px solid ${room.color}`, padding: '10px 12px',
-              marginBottom: 6, borderRadius: '0 10px 10px 0', backgroundColor: '#f9fafb',
+              borderLeft: `5px solid ${room.color}`, padding: '14px 14px',
+              marginBottom: 8, borderRadius: '0 14px 14px 0', backgroundColor: '#f9fafb',
             }}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 700 }}>{room.name}</div>
-                <div style={{ fontSize: 12, color: '#6b7280' }}>
+                <div style={{ fontSize: 16, fontWeight: 800 }}>{room.name}</div>
+                <div style={{ fontSize: 14, color: '#6b7280', marginTop: 2 }}>
                   {room.capacity || 2} orang · {formatRp(room.pricePerNight)}/malam
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 6 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
                 <button
-                  style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  style={{
+                    width: 44, height: 44, borderRadius: 12, backgroundColor: '#ecfdf5',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
                   onClick={() => startEditRoom(room)}
                 >
-                  <Pencil size={15} color="#0f766e" />
+                  <Pencil size={18} color="#0f766e" />
                 </button>
                 {rooms.length > 1 && (
                   <button
-                    style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{
+                      width: 44, height: 44, borderRadius: 12, backgroundColor: '#fef2f2',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
                     onClick={() => deleteRoom(room)}
                   >
-                    <Trash2 size={15} color="#dc2626" />
+                    <Trash2 size={18} color="#dc2626" />
                   </button>
                 )}
               </div>
@@ -291,7 +386,46 @@ export default function Settings() {
         })}
       </div>
 
-      {/* Section 3: Panduan */}
+      {/* Section 3: Backup */}
+      <div style={sectionStyle}>
+        <div style={sectionTitle}>Cadangkan Data</div>
+        <p style={{ fontSize: 15, color: '#6b7280', marginBottom: 16, lineHeight: 1.6 }}>
+          Simpan salinan data ke file. Bisa dikembalikan kapan saja.
+        </p>
+        <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+          <button
+            style={{
+              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: 14, borderRadius: 14, fontSize: 16, fontWeight: 800,
+              backgroundColor: '#0f766e', color: '#fff', minHeight: 56,
+            }}
+            onClick={exportData}
+          >
+            <Download size={20} /> Simpan Backup
+          </button>
+          <button
+            style={{
+              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: 14, borderRadius: 14, fontSize: 16, fontWeight: 800,
+              backgroundColor: '#f3f4f6', color: '#374151', minHeight: 56,
+            }}
+            onClick={importData}
+          >
+            <Upload size={20} /> Kembalikan
+          </button>
+        </div>
+        {backupStatus && (
+          <div style={{
+            textAlign: 'center', fontSize: 15, fontWeight: 700,
+            color: backupStatus.includes('berhasil') ? '#16a34a' : '#ca8a04',
+            padding: 8,
+          }}>
+            {backupStatus}
+          </div>
+        )}
+      </div>
+
+      {/* Section 4: Panduan */}
       <div style={sectionStyle}>
         <div style={sectionTitle}>Panduan Pakai</div>
         {FAQ.map((item, i) => (
@@ -301,15 +435,16 @@ export default function Settings() {
             <button
               style={{
                 width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '12px 0', fontSize: 14, fontWeight: 600, color: '#374151', textAlign: 'left',
+                padding: '14px 0', fontSize: 16, fontWeight: 700, color: '#374151', textAlign: 'left',
+                minHeight: 52,
               }}
               onClick={() => setExpandedFaq(expandedFaq === i ? null : i)}
             >
-              <span style={{ flex: 1, paddingRight: 8 }}>{item.q}</span>
-              {expandedFaq === i ? <ChevronUp size={16} color="#9ca3af" /> : <ChevronDown size={16} color="#9ca3af" />}
+              <span style={{ flex: 1, paddingRight: 10 }}>{item.q}</span>
+              {expandedFaq === i ? <ChevronUp size={20} color="#9ca3af" /> : <ChevronDown size={20} color="#9ca3af" />}
             </button>
             {expandedFaq === i && (
-              <div style={{ fontSize: 14, color: '#6b7280', paddingBottom: 12, lineHeight: 1.6 }}>
+              <div style={{ fontSize: 16, color: '#6b7280', paddingBottom: 14, lineHeight: 1.7 }}>
                 {item.a}
               </div>
             )}
@@ -318,18 +453,18 @@ export default function Settings() {
       </div>
 
       {/* Footer */}
-      <div style={{ textAlign: 'center', padding: '16px 0 24px', color: '#9ca3af', fontSize: 12 }}>
+      <div style={{ textAlign: 'center', padding: '20px 0 28px', color: '#9ca3af', fontSize: 14 }}>
         <div style={{ fontWeight: 700 }}>TamuRA v0.1</div>
-        <div>Data tersimpan di device ini</div>
+        <div>Data tersimpan di HP ini</div>
       </div>
 
       {/* Add room modal */}
       <Modal open={showAddRoom} onClose={() => setShowAddRoom(false)} title="Tambah Kamar">
-        <div style={{ marginBottom: 12 }}>
+        <div style={{ marginBottom: 16 }}>
           <label style={labelStyle}>Nama Kamar *</label>
-          <input style={inputStyle} placeholder="contoh Bungalow 3" value={newRoomName} onChange={e => setNewRoomName(e.target.value)} />
+          <input style={inputStyle} placeholder="contoh: Bungalow 3" value={newRoomName} onChange={e => setNewRoomName(e.target.value)} />
         </div>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
           <div style={{ flex: 1 }}>
             <label style={labelStyle}>Kapasitas</label>
             <input style={inputStyle} type="number" value={newRoomCapacity} onChange={e => setNewRoomCapacity(Number(e.target.value))} />
@@ -341,9 +476,9 @@ export default function Settings() {
         </div>
         <button
           style={{
-            width: '100%', padding: 14, fontSize: 16, fontWeight: 700,
+            width: '100%', padding: 16, fontSize: 18, fontWeight: 800,
             color: '#fff', backgroundColor: newRoomName.trim() ? '#0f766e' : '#9ca3af',
-            borderRadius: 12, border: 'none', minHeight: 48,
+            borderRadius: 14, border: 'none', minHeight: 56,
           }}
           disabled={!newRoomName.trim()}
           onClick={addRoom}
@@ -357,9 +492,9 @@ export default function Settings() {
 
 function InfoRow({ label, value }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f3f4f6' }}>
-      <span style={{ fontSize: 14, color: '#6b7280' }}>{label}</span>
-      <span style={{ fontSize: 14, fontWeight: 600 }}>{value}</span>
+    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f3f4f6' }}>
+      <span style={{ fontSize: 16, color: '#6b7280' }}>{label}</span>
+      <span style={{ fontSize: 16, fontWeight: 700 }}>{value}</span>
     </div>
   )
 }

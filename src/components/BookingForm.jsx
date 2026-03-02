@@ -7,23 +7,24 @@ import Modal from './Modal'
 
 const inputStyle = {
   width: '100%',
-  padding: '12px 14px',
-  fontSize: 16,
+  padding: '14px 16px',
+  fontSize: 17,
   border: '2px solid #e5e7eb',
-  borderRadius: 10,
+  borderRadius: 14,
   outline: 'none',
   backgroundColor: '#fff',
+  minHeight: 52,
 }
 
 const labelStyle = {
   display: 'block',
-  fontSize: 14,
-  fontWeight: 600,
-  marginBottom: 6,
+  fontSize: 16,
+  fontWeight: 700,
+  marginBottom: 8,
   color: '#374151',
 }
 
-const groupStyle = { marginBottom: 14 }
+const groupStyle = { marginBottom: 18 }
 
 export default function BookingForm({ open, onClose, defaultDate }) {
   const [guestName, setGuestName] = useState('')
@@ -151,21 +152,37 @@ export default function BookingForm({ open, onClose, defaultDate }) {
 
       <div style={groupStyle}>
         <label style={labelStyle}>Pilih Kamar *</label>
-        <select
-          style={{ ...inputStyle, appearance: 'auto' }}
-          value={roomId}
-          onChange={e => { setRoomId(e.target.value); setConflict(null) }}
-        >
-          <option value="">-- Pilih Kamar --</option>
-          {rooms?.map(r => (
-            <option key={r.id} value={r.id}>
-              {r.name} - {formatRp(r.pricePerNight)}/malam
-            </option>
-          ))}
-        </select>
+        {rooms && rooms.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {rooms.map(r => (
+              <button
+                key={r.id}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '14px 16px', borderRadius: 14,
+                  border: `2px solid ${Number(roomId) === r.id ? r.color : '#e5e7eb'}`,
+                  backgroundColor: Number(roomId) === r.id ? '#ecfdf5' : '#fff',
+                  cursor: 'pointer', textAlign: 'left', minHeight: 52,
+                }}
+                onClick={() => { setRoomId(String(r.id)); setConflict(null) }}
+              >
+                <div style={{
+                  width: 14, height: 14, borderRadius: '50%',
+                  backgroundColor: r.color, flexShrink: 0,
+                }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 16, fontWeight: 700 }}>{r.name}</div>
+                  <div style={{ fontSize: 14, color: '#6b7280' }}>{formatRp(r.pricePerNight)}/malam</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div style={{ color: '#9ca3af', fontSize: 15 }}>Memuat kamar...</div>
+        )}
       </div>
 
-      <div style={{ display: 'flex', gap: 10 }}>
+      <div style={{ display: 'flex', gap: 12 }}>
         <div style={{ ...groupStyle, flex: 1 }}>
           <label style={labelStyle}>Check-in *</label>
           <input style={inputStyle} type="date" value={checkIn} onChange={e => { setCheckIn(e.target.value); setConflict(null) }} />
@@ -178,9 +195,9 @@ export default function BookingForm({ open, onClose, defaultDate }) {
 
       {nights > 0 && selectedRoom && (
         <div style={{
-          backgroundColor: '#ecfdf5', borderRadius: 10, padding: 12,
-          fontSize: 15, fontWeight: 700, color: '#0f766e', textAlign: 'center',
-          marginBottom: 14,
+          backgroundColor: '#ecfdf5', borderRadius: 14, padding: 16,
+          fontSize: 17, fontWeight: 800, color: '#0f766e', textAlign: 'center',
+          marginBottom: 18,
         }}>
           {nights} malam x {formatRp(selectedRoom.pricePerNight)} = {formatRp(total)}
         </div>
@@ -188,8 +205,8 @@ export default function BookingForm({ open, onClose, defaultDate }) {
 
       {conflict && (
         <div style={{
-          backgroundColor: '#fef2f2', borderRadius: 10, padding: 12,
-          fontSize: 14, color: '#dc2626', marginBottom: 14,
+          backgroundColor: '#fef2f2', borderRadius: 14, padding: 16,
+          fontSize: 16, color: '#dc2626', marginBottom: 18,
           border: '1px solid #fecaca',
         }}>
           {conflict}
@@ -198,9 +215,9 @@ export default function BookingForm({ open, onClose, defaultDate }) {
 
       <button
         style={{
-          width: '100%', padding: 14, fontSize: 16, fontWeight: 700,
+          width: '100%', padding: 16, fontSize: 18, fontWeight: 800,
           color: '#fff', backgroundColor: saving ? '#9ca3af' : '#0f766e',
-          borderRadius: 12, border: 'none', minHeight: 48,
+          borderRadius: 14, border: 'none', minHeight: 56,
           cursor: saving ? 'default' : 'pointer',
         }}
         disabled={saving || !guestName.trim() || !roomId || !checkIn || !checkOut || nights <= 0}
